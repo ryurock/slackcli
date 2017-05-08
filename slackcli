@@ -19,7 +19,7 @@ EOS
   exit 1
 }
 
-conf_path="./slack.ini"
+conf_path="/etc/slack.ini"
 section="default"
 text=""
 slack_username="slackcli default"

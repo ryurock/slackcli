@@ -1,0 +1,96 @@
+#!/bin/env bash
+
+set -e
+
+progname="$( basename $0 )"
+
+# Usage
+function usage() {
+  cat << EOS >&2
+Usage: ${progname} [-h,--help] [-c,--conf [inifile config path]] [-s,--section ini config section] [slack text]
+  A sample script of parsing on bash.
+
+Options:
+  -c, --conf        slack config ini.
+  -s, --section     slack config ini section.
+  -u, --username    slack POST message username
+  -h, --help        Show usage.
+EOS
+  exit 1
+}
+
+conf_path=""
+section="default"
+text=""
+slack_username="slackcli default"
+slack_icon=":slack:"
+param=()
+
+for opt in "$@"; do
+    case "${opt}" in
+        '-c' | '--conf' )
+            if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
+                echo "${progname}: option requires an argument -- $( echo $1 | sed 's/^-*//' )" 1>&2
+                exit 1
+            fi
+            conf_path="$2"
+            shift 2
+            ;;
+        '-s' | '--section' )
+            if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
+                echo "${progname}: option requires an argument -- $( echo $1 | sed 's/^-*//' )" 1>&2
+                exit 1
+            fi
+            section="$2"
+            shift 2
+            ;;
+        '-u' | '--username' )
+            if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]]; then
+                echo "${progname}: option requires an argument -- $( echo $1 | sed 's/^-*//' )" 1>&2
+                exit 1
+            fi
+            slack_username="$2"
+            shift 2
+            ;;
+        '-h' | '--help' )
+            usage
+            ;;
+        -* )
+            echo "${progname}: illegal option -- '$( echo $1 | sed 's/^-*//' )'" 1>&2
+            usage
+            exit 1
+            ;;
+        * )
+            if [[ -n "$1" ]] && [[ ! "$1" =~ ^-+ ]]; then
+                param+=( "$1" ); shift
+            fi
+            ;;
+    esac
+done
+
+text="${param}"; param=("${param[@]:1}")
+[[ -z "${text}" ]] && usage
+
+ini_parse() {
+  # ini parser
+  eval `sed -e 's/[[:space:]]*\=[[:space:]]*/=/g' \
+      -e 's/;.*$//' \
+      -e 's/[[:space:]]*$//' \
+      -e 's/^[[:space:]]*//' \
+      -e "s/^\(.*\)=\([^\"']*\)$/\1=\"\2\"/" \
+     < $1 \
+      | sed -n -e "/^\[$2\]/,/^\s*\[/{/^[^;].*\=.*/p;}"`
+}
+
+if [ ! "${conf_path}" = "" ]; then
+  ini_parse $conf_path $section
+fi
+
+curl -s -X POST --data-urlencode \
+  "payload={
+    'channel': '$slack_channel',
+    'username': '$slack_username',
+    'icon_emoji': '$slack_icon',
+    'text': '$text'
+  }" \
+$slack_webhook_url >/dev/null

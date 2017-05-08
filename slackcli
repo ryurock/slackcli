@@ -19,7 +19,7 @@ EOS
   exit 1
 }
 
-conf_path=""
+conf_path="./slack.ini"
 section="default"
 text=""
 slack_username="slackcli default"
@@ -82,7 +82,7 @@ ini_parse() {
       | sed -n -e "/^\[$2\]/,/^\s*\[/{/^[^;].*\=.*/p;}"`
 }
 
-if [ ! "${conf_path}" = "" ]; then
+if [ -e "${conf_path}" ]; then
   ini_parse $conf_path $section
 fi
 

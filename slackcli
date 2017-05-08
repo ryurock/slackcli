@@ -83,6 +83,7 @@ ini_parse() {
 }
 
 if [ -e "${conf_path}" ]; then
+  ini_parse $conf_path default
   ini_parse $conf_path $section
 fi
 
